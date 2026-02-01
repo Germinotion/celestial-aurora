@@ -225,10 +225,50 @@ const CelestialAurora = () => {
 
     const handleMouseUp = () => { mouse.active = false; };
 
+    // Touch event handlers
+    const handleTouchStart = (e) => {
+      e.preventDefault();
+      mouse.active = true;
+      startAudio();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      mouse.x = touch.clientX - rect.left;
+      mouse.y = touch.clientY - rect.top;
+      // Burst particles on tap
+      for (let i = 0; i < 15; i++) {
+        particles.push({
+          x: mouse.x,
+          y: mouse.y,
+          vx: (Math.random() - 0.5) * 3,
+          vy: (Math.random() - 0.5) * 3,
+          size: Math.random() * 3 + 2,
+          color: currentColors[Math.floor(Math.random() * currentColors.length)],
+          alpha: 1,
+          life: 1,
+          decay: 0.015,
+          angle: Math.random() * Math.PI * 2,
+          angleSpeed: (Math.random() - 0.5) * 0.05
+        });
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      mouse.x = touch.clientX - rect.left;
+      mouse.y = touch.clientY - rect.top;
+    };
+
+    const handleTouchEnd = () => { mouse.active = false; };
+
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mouseup', handleMouseUp);
     canvas.addEventListener('mouseleave', handleMouseUp);
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       cancelAnimationFrame(animationId);
@@ -236,6 +276,9 @@ const CelestialAurora = () => {
       canvas.removeEventListener('mousedown', handleMouseDown);
       canvas.removeEventListener('mouseup', handleMouseUp);
       canvas.removeEventListener('mouseleave', handleMouseUp);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
     };
   }, [theme, dimensions]);
 
@@ -268,12 +311,13 @@ const CelestialAurora = () => {
       {/* Title */}
       <div style={{
         position: 'absolute',
-        top: '40px',
+        top: 'max(20px, env(safe-area-inset-top, 20px))',
         left: '50%',
         transform: 'translateX(-50%)',
         textAlign: 'center',
         zIndex: 10,
-        pointerEvents: 'none'
+        pointerEvents: 'none',
+        padding: '10px 20px'
       }}>
         <h1 style={{
           fontSize: 'clamp(1.8rem, 5vw, 3.5rem)',
@@ -293,27 +337,28 @@ const CelestialAurora = () => {
           marginTop: '12px',
           fontStyle: 'italic'
         }}>
-          Click anywhere to begin
+          Tap or click to interact
         </p>
       </div>
 
       {/* Theme buttons */}
       <div style={{
         position: 'absolute',
-        bottom: '40px',
+        bottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
         left: '50%',
         transform: 'translateX(-50%)',
         display: 'flex',
-        gap: '16px',
-        zIndex: 10
+        gap: 'clamp(10px, 3vw, 16px)',
+        zIndex: 10,
+        padding: '10px'
       }}>
         {Object.entries(themes).map(([key, value]) => (
           <button
             key={key}
             onClick={() => { setTheme(key); startAudio(); }}
             style={{
-              width: '48px',
-              height: '48px',
+              width: 'clamp(40px, 10vw, 48px)',
+              height: 'clamp(40px, 10vw, 48px)',
               borderRadius: '50%',
               border: theme === key ? '3px solid white' : '2px solid rgba(255,255,255,0.3)',
               background: `linear-gradient(135deg, ${value.colors[0]}, ${value.colors[2]})`,
@@ -322,18 +367,19 @@ const CelestialAurora = () => {
               boxShadow: theme === key
                 ? `0 0 25px ${value.colors[0]}88`
                 : '0 4px 12px rgba(0,0,0,0.3)',
-              transform: theme === key ? 'scale(1.15)' : 'scale(1)'
+              transform: theme === key ? 'scale(1.15)' : 'scale(1)',
+              touchAction: 'manipulation'
             }}
             title={value.name}
           />
         ))}
       </div>
 
-      {/* Corner decorations */}
-      <div style={{ position: 'absolute', top: 20, left: 20, width: 50, height: 50, borderLeft: '1px solid rgba(255,255,255,0.3)', borderTop: '1px solid rgba(255,255,255,0.3)' }} />
-      <div style={{ position: 'absolute', top: 20, right: 20, width: 50, height: 50, borderRight: '1px solid rgba(255,255,255,0.3)', borderTop: '1px solid rgba(255,255,255,0.3)' }} />
-      <div style={{ position: 'absolute', bottom: 100, left: 20, width: 50, height: 50, borderLeft: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
-      <div style={{ position: 'absolute', bottom: 100, right: 20, width: 50, height: 50, borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
+      {/* Corner decorations - hidden on very small screens */}
+      <div style={{ position: 'absolute', top: 20, left: 20, width: 'clamp(30px, 8vw, 50px)', height: 'clamp(30px, 8vw, 50px)', borderLeft: '1px solid rgba(255,255,255,0.3)', borderTop: '1px solid rgba(255,255,255,0.3)' }} />
+      <div style={{ position: 'absolute', top: 20, right: 20, width: 'clamp(30px, 8vw, 50px)', height: 'clamp(30px, 8vw, 50px)', borderRight: '1px solid rgba(255,255,255,0.3)', borderTop: '1px solid rgba(255,255,255,0.3)' }} />
+      <div style={{ position: 'absolute', bottom: 'clamp(80px, 15vh, 100px)', left: 20, width: 'clamp(30px, 8vw, 50px)', height: 'clamp(30px, 8vw, 50px)', borderLeft: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
+      <div style={{ position: 'absolute', bottom: 'clamp(80px, 15vh, 100px)', right: 20, width: 'clamp(30px, 8vw, 50px)', height: 'clamp(30px, 8vw, 50px)', borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid rgba(255,255,255,0.3)' }} />
     </div>
   );
 };
